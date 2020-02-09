@@ -25,8 +25,8 @@ class Trainer() :
             self.sgd_momentum = kwargs["sgd_momentum"]
 
         self.use_label_smoothing = kwargs["label_smoothing"]
-        if (kwargs["num_layers"] - 2) % 6 :
-            raise Exception("({} - 2) % (2 * 3) != 0".format(kwargs["num_layers"]))
+        if (kwargs["num_layers"] - 2) % 9 :
+            raise Exception("({} - 2) % (3 * 3) != 0".format(kwargs["num_layers"]))
 
         if self.mode != "plot" :
             self.ckpt_path = kwargs["ckpt_path"]
