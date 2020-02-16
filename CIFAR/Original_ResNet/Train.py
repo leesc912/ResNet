@@ -24,6 +24,7 @@ class Trainer() :
             self.lr = kwargs["lr"]
             self.sgd_momentum = kwargs["sgd_momentum"]
 
+        self.num_category = kwargs["num_category"]
         self.use_label_smoothing = kwargs["label_smoothing"]
         if (kwargs["num_layers"] - 2) % 6 :
             raise Exception("({} - 2) % (2 * 3) != 0".format(kwargs["num_layers"]))
@@ -40,16 +41,16 @@ class Trainer() :
         top_k_file = log_folder / "top_k_accuracy.csv"
 
         shortcut = "identity" if kwargs["zero_padding"] else "projection"
-        self.resnet = make_resnet(kwargs["num_category"], kwargs["num_layers"], kwargs["bn_momentum"], shortcut)
+        self.resnet = make_resnet(self.num_category, kwargs["num_layers"], kwargs["bn_momentum"], shortcut)
 
         if self.mode == "test" :
-            _, _, self.test_dataset, _, _, self.num_test = get_dataset(kwargs["batch_size"], kwargs["num_category"], self.use_label_smoothing)
-            self.top_k_accuracy = custom_top_k_metrics(self.resnet, self.test_dataset, top_k_file, kwargs["num_category"], 10, 
+            _, _, self.test_dataset, _, _, self.num_test = get_dataset(kwargs["batch_size"], self.num_category, self.use_label_smoothing)
+            self.top_k_accuracy = custom_top_k_metrics(self.resnet, self.test_dataset, top_k_file, self.num_category, 10, 
                                                        self.num_test, self.use_label_smoothing)
         elif self.mode == "train" :
-            self.train_dataset, self.val_dataset, _, self.num_train, self.num_val, _ = get_dataset(kwargs["batch_size"], kwargs["num_category"], 
+            self.train_dataset, self.val_dataset, _, self.num_train, self.num_val, _ = get_dataset(kwargs["batch_size"], self.num_category, 
                                                                                                    self.use_label_smoothing)
-            self.top_k_accuracy = custom_top_k_metrics(self.resnet, self.val_dataset, top_k_file, kwargs["num_category"], 10, 
+            self.top_k_accuracy = custom_top_k_metrics(self.resnet, self.val_dataset, top_k_file, self.num_category, 10, 
                                                        self.num_val, self.use_label_smoothing)
 
         # kwargs 값 저장
@@ -75,11 +76,13 @@ class Trainer() :
         if self.use_label_smoothing :
             self.train_acc_metric = tf.keras.metrics.CategoricalAccuracy(name = "train_acc")
             self.loss_function = tf.keras.losses.CategoricalCrossentropy(from_logits = True)
-            train_function = self.forward_smoothing
+            train_function = tf.function(self.forward, input_signature = [tf.TensorSpec((None, 32, 32, 3), tf.float32), 
+                                                                          tf.TensorSpec((None, self.num_category), tf.float32)])
         else :
             self.train_acc_metric = tf.keras.metrics.SparseCategoricalAccuracy(name = "train_acc")
             self.loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True)
-            train_function = self.forward_sparse
+            train_function = tf.function(self.forward, input_signature = [tf.TensorSpec((None, 32, 32, 3), tf.float32), 
+                                                                          tf.TensorSpec((None, 1), tf.int32)])
 
         ckpt = tf.train.Checkpoint(model = self.resnet, opt = self.opt)
         if self.ckpt_path is not None :
@@ -126,20 +129,7 @@ class Trainer() :
 
         self.top_k_accuracy.evaluate("Test")
 
-    @tf.function(input_signature = [tf.TensorSpec((None, 32, 32, 3), tf.float32), tf.TensorSpec((None, 1), tf.int32)])
-    def forward_sparse(self, inputs, labels) :
-        with tf.GradientTape() as tape :
-            logits = self.resnet(inputs, training = True)
-            loss = self.loss_function(labels, logits)
-
-        grads = tape.gradient(loss, self.resnet.trainable_variables)
-        self.opt.apply_gradients(zip(grads, self.resnet.trainable_variables))
-
-        self.train_loss_metric.update_state(loss)
-        self.train_acc_metric.update_state(labels, logits)
-
-    @tf.function(input_signature = [tf.TensorSpec((None, 32, 32, 3), tf.float32), tf.TensorSpec((None, 10), tf.float32)])
-    def forward_smoothing(self, inputs, labels) :
+    def forward(self, inputs, labels) :
         with tf.GradientTape() as tape :
             logits = self.resnet(inputs, training = True)
             loss = self.loss_function(labels, logits)

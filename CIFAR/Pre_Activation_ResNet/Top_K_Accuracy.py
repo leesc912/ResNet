@@ -15,11 +15,13 @@ class custom_top_k_metrics() :
 
         self.use_label_smoothing = use_label_smoothing
         if self.use_label_smoothing :
-            self.val_function = self.forward_smoothing
             self.loss_function = tf.keras.losses.CategoricalCrossentropy(from_logits = True)
+            self.val_function = tf.function(self.forward, input_signature = [tf.TensorSpec((None, 32, 32, 3), tf.float32), 
+                                                                             tf.TensorSpec((None, self.num_category), tf.float32)])
         else :
-            self.val_function = self.forward_sparse
             self.loss_function = tf.keras.losses.SparseCategoricalCrossentropy(from_logits = True)
+            self.val_function = tf.function(self.forward, input_signature = [tf.TensorSpec((None, 32, 32, 3), tf.float32), 
+                                                                             tf.TensorSpec((None, 1), tf.int32)])
 
         self.val_loss_metric = tf.keras.metrics.Mean(name = "val_Loss")
 
@@ -66,17 +68,7 @@ class custom_top_k_metrics() :
         # loss와 Top 1 accuracy 반환
         return self.val_loss_metric.result(), accumulated_list[0]
         
-    @tf.function(input_signature = [tf.TensorSpec((None, 32, 32, 3), tf.float32), tf.TensorSpec((None, 1), tf.int32)])
-    def forward_sparse(self, inputs, labels) :
-        logits = self.model(inputs, training = False)
-        loss = self.loss_function(labels, logits)
-
-        self.val_loss_metric.update_state(loss)
-
-        return logits
-
-    @tf.function(input_signature = [tf.TensorSpec((None, 32, 32, 3), tf.float32), tf.TensorSpec((None, 10), tf.float32)])
-    def forward_smoothing(self, inputs, labels) :
+    def forward(self, inputs, labels) :
         logits = self.model(inputs, training = False)
         loss = self.loss_function(labels, logits)
 
