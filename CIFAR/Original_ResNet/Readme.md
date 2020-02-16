@@ -33,13 +33,7 @@
 
 | Model | Min Training Loss | Min Val Loss | Max Val Acc | Test Acc |
 | --- | --- | --- | --- | --- |
-| ResNet-110 | 0.501 | 0.734 | 0.926 | 0.915 |
-
----
-
-### model summary
-
-![](./Pics/summary_model.png)
+| ResNet-110 | 0.501 | 0.768 | 0.922 | 0.915 |
 
 ---
 
