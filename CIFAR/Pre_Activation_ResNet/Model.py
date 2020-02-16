@@ -1,8 +1,7 @@
 from tensorflow import pad, keras
+from tensorflow.keras import backend as K
 
 def make_resnet(num_category, num_layers, bn_momentum, shortcut) :
-    assert shortcut in ["identity", "projection"]
-    assert not (num_layers - 2) % (3 * 3)
     num_blocks = (num_layers - 2) // (3 * 3)
 
     k_init = keras.initializers.TruncatedNormal(stddev = 0.02)
