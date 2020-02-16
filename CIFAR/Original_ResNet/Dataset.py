@@ -15,6 +15,10 @@ def augmentation(x, y) :
 
     return x, y
 
+def preprocessing(x, y) :
+    x = tf.image.per_image_standardization(x)
+    return x, y
+
 def label_smoothing(labels, num_category, epsilon = 0.1) :
     labels = K.one_hot(labels, num_category)
     return tf.squeeze(((1 - epsilon) * labels) + (epsilon / num_category))
@@ -49,7 +53,7 @@ def get_dataset(batch_size, num_category, use_label_smoothing) :
     test_dataset = tf.data.Dataset.from_tensor_slices((test_X, test_y))
 
     train_dataset = train_dataset.cache().map(augmentation).shuffle(num_train + 1).batch(batch_size).prefetch(1)
-    val_dataset = val_dataset.cache().map(augmentation).batch(num_val + 1).prefetch(1)
-    test_dataset = test_dataset.cache().map(augmentation).batch(batch_size).prefetch(1)
+    val_dataset = val_dataset.cache().map(preprocessing).batch(batch_size).prefetch(1)
+    test_dataset = test_dataset.cache().map(preprocessing).batch(batch_size).prefetch(1)
 
     return train_dataset, val_dataset,test_dataset, num_train, num_val, num_test
