@@ -17,6 +17,25 @@
 
 ---
 
+### Result
+
+참고) Label smoothing 적용 (-l "True")
+
+##### learning rate 변화
+
+| Epoch | Learning Rate |
+| --- | --- |
+| 1 ~ 59 | 0.1 |
+| 60 ~ 119 | 0.02 |
+| 120 ~ 159 | 0.004 |
+| 160 ~ 200 | 0.0008 |
+
+| Model | Min Training Loss | Min Val Loss | Max Val Acc | Test Acc |
+| --- | --- | --- | --- | --- |
+| WRN-28-10 | 0.501 | 0.667 | 0.943 | 0.938 |
+
+---
+
 **생성되는 파일 예시**
 
 ## **training_result_file**
