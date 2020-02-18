@@ -93,7 +93,7 @@ class Trainer() :
             K.set_value(self.opt.lr, self.lr)
 
         progbar = tf.keras.utils.Progbar(target = self.num_train)
-        for epoch in range(self.initial_epoch, self.initial_epoch + self.epochs) :
+        for epoch in range(self.initial_epoch, self.epochs + 1) :
             self.train_loss_metric.reset_states()
             self.train_acc_metric.reset_states()
 
